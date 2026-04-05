@@ -108,7 +108,14 @@ export default function ContainersScreen() {
               <div className="p-2">
                 <p className="text-sm font-medium text-gray-900 truncate">{c.name ?? 'Unnamed container'}</p>
                 {c.current_food ? (
-                  <p className="text-xs text-green-700 truncate">{c.current_food}</p>
+                  <>
+                    <p className="text-xs text-green-700 truncate">{c.current_food}</p>
+                    {c.current_expiry && (
+                      <p className="text-xs text-gray-400">
+                        Eat by {new Date(c.current_expiry.slice(0, 10) + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
+                      </p>
+                    )}
+                  </>
                 ) : (
                   <p className="text-xs text-gray-400">Empty</p>
                 )}
