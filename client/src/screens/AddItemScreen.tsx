@@ -441,17 +441,24 @@ function LeftoverStickerScanner({
 }) {
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState('');
+  const [conflict, setConflict] = useState<{ uuid: string; existingName: string } | null>(null);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
 
   const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 
+  const saveWithUuid = async (uuid: string) => {
+    await itemsApi.create({ name: foodData.name, expiry_date: foodData.expiry_date, qr_token: uuid, category: 'Leftovers' });
+    onDone();
+  };
+
   const startScan = async (facing: 'environment' | 'user' = facingMode) => {
     controlsRef.current?.stop();
     controlsRef.current = null;
     setScanning(true);
     setError('');
+    setConflict(null);
     let handled = false;
     try {
       const { BrowserMultiFormatReader } = await import('@zxing/browser');
@@ -464,32 +471,26 @@ function LeftoverStickerScanner({
           handled = true;
           controlsRef.current?.stop();
           controlsRef.current = null;
+          setScanning(false);
           const text = result.getText();
           const uuidMatch = text.match(UUID_RE);
           if (!uuidMatch) {
             setError("That doesn't look like a fridge sticker. Try again.");
-            setScanning(false);
             handled = false;
             return;
           }
           const uuid = uuidMatch[0];
-          // Check if already linked
           let existingItem = null;
-          try { existingItem = await itemsApi.getByQrToken(uuid); } catch { /* not found = free to use */ }
+          try { existingItem = await itemsApi.getByQrToken(uuid); } catch { /* free to use */ }
           if (existingItem) {
-            setError('This sticker is already linked to a food item. Use a different one.');
-            setScanning(false);
-            handled = false;
+            setConflict({ uuid, existingName: existingItem.name });
             return;
           }
-          // Link the sticker
           try {
-            await itemsApi.create({ name: foodData.name, expiry_date: foodData.expiry_date, qr_token: uuid, category: 'Leftovers' });
-            onDone();
+            await saveWithUuid(uuid);
           } catch (e: unknown) {
             const msg = (e as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error ?? (e as Error)?.message ?? 'Unknown error';
             setError(`Could not save: ${msg}`);
-            setScanning(false);
             handled = false;
           }
         }
@@ -537,13 +538,32 @@ function LeftoverStickerScanner({
           </div>
         </div>
       )}
+      {conflict && (
+        <div className="space-y-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <p className="text-sm text-amber-800 text-center">
+            This sticker is currently linked to <span className="font-semibold">{conflict.existingName}</span>. Replace it with <span className="font-semibold">{foodData.name}</span>?
+          </p>
+          <button
+            onClick={async () => { await saveWithUuid(conflict.uuid); }}
+            className="w-full bg-green-600 text-white rounded-lg py-3 text-sm font-medium"
+          >
+            Yes, replace
+          </button>
+          <button
+            onClick={() => { setConflict(null); startScan(); }}
+            className="w-full bg-gray-100 text-gray-700 rounded-lg py-3 text-sm"
+          >
+            Scan a different sticker
+          </button>
+        </div>
+      )}
       {error && (
         <div className="space-y-2">
           <p className="text-red-500 text-sm text-center">{error}</p>
           <button onClick={() => startScan()} className="w-full bg-gray-100 text-gray-700 rounded-lg py-3 text-sm">Try Again</button>
         </div>
       )}
-      <button onClick={onBack} className="w-full text-gray-400 text-sm py-2">← Back</button>
+      {!conflict && <button onClick={onBack} className="w-full text-gray-400 text-sm py-2">← Back</button>}
     </div>
   );
 }
