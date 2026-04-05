@@ -3,6 +3,33 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { itemsApi, type Item } from '../api/items';
 
+function foodEmoji(name: string): string {
+  const n = name.toLowerCase();
+  if (/chicken|poultry|hen/.test(n)) return '🍗';
+  if (/beef|steak|mince|meatball/.test(n)) return '🥩';
+  if (/pork|bacon|ham|sausage/.test(n)) return '🥓';
+  if (/lamb|mutton/.test(n)) return '🍖';
+  if (/fish|salmon|tuna|cod|prawn|shrimp|seafood/.test(n)) return '🐟';
+  if (/pasta|spaghetti|noodle|macaroni|lasagne|lasagna/.test(n)) return '🍝';
+  if (/rice|fried rice|pilaf/.test(n)) return '🍚';
+  if (/soup|stew|broth/.test(n)) return '🍲';
+  if (/salad/.test(n)) return '🥗';
+  if (/pizza/.test(n)) return '🍕';
+  if (/burger|sandwich|wrap/.test(n)) return '🍔';
+  if (/curry/.test(n)) return '🍛';
+  if (/taco|burrito|mexican/.test(n)) return '🌮';
+  if (/cake|dessert|pudding|cookie|biscuit/.test(n)) return '🍰';
+  if (/bread|toast|roll|bun/.test(n)) return '🍞';
+  if (/egg/.test(n)) return '🥚';
+  if (/cheese/.test(n)) return '🧀';
+  if (/veggie|vegetable|veg|carrot|broccoli|spinach/.test(n)) return '🥦';
+  if (/fruit|apple|orange|banana|berry/.test(n)) return '🍎';
+  if (/potato|chips|fries/.test(n)) return '🥔';
+  if (/mushroom/.test(n)) return '🍄';
+  if (/corn/.test(n)) return '🌽';
+  return '🥡';
+}
+
 export default function QrItemScreen() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
@@ -49,13 +76,13 @@ export default function QrItemScreen() {
 
   if (status === 'found' && item) {
     const formatDate = (d: string) =>
-      new Date(d + 'T00:00:00').toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' });
+      new Date(d.slice(0, 10) + 'T00:00:00').toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' });
 
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-sm space-y-6">
           <div className="bg-white rounded-2xl shadow-sm p-6 text-center">
-            <p className="text-3xl mb-3">🥡</p>
+            <p className="text-3xl mb-3">{foodEmoji(item.name)}</p>
             <h1 className="text-2xl font-bold text-gray-900">{item.name}</h1>
             {item.expiry_date && (
               <p className="text-gray-500 mt-2">Eat by <span className="font-medium text-gray-700">{formatDate(item.expiry_date)}</span></p>
