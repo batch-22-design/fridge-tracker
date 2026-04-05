@@ -104,34 +104,58 @@ function ManualForm() {
 function ScanForm() {
   const [status, setStatus] = useState<'idle' | 'scanning' | 'found' | 'error'>('idle');
   const [product, setProduct] = useState<{ name: string; category?: string } | null>(null);
+  const [cameras, setCameras] = useState<{ deviceId: string; label: string }[]>([]);
+  const [cameraIndex, setCameraIndex] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const readerRef = useRef<import('@zxing/browser').BrowserMultiFormatReader | null>(null);
   const navigate = useNavigate();
-  const scannerRef = useRef<import('html5-qrcode').Html5Qrcode | null>(null);
 
-  const startScan = async () => {
+  const startScan = async (camIndex = 0) => {
     setStatus('scanning');
     try {
-      const { Html5Qrcode } = await import('html5-qrcode');
-      const scanner = new Html5Qrcode('qr-reader');
-      scannerRef.current = scanner;
-      await scanner.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: 250 },
-        async (decodedText) => {
-          await scanner.stop();
-          scannerRef.current = null;
+      const { BrowserMultiFormatReader, BarcodeFormat, DecodeHintType } = await import('@zxing/browser');
+      const hints = new Map();
+      hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+        BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E,
+        BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.QR_CODE,
+      ]);
+      const reader = new BrowserMultiFormatReader(hints);
+      readerRef.current = reader;
+
+      const devices = await BrowserMultiFormatReader.listVideoInputDevices();
+      setCameras(devices);
+
+      const deviceId = devices[camIndex]?.deviceId;
+      await reader.decodeFromVideoDevice(deviceId, videoRef.current!, async (result, err) => {
+        if (result) {
+          reader.reset();
+          readerRef.current = null;
           try {
-            const p = await itemsApi.scan(decodedText);
+            const p = await itemsApi.scan(result.getText());
             setProduct(p);
             setStatus('found');
           } catch {
             setStatus('error');
           }
-        },
-        () => {}
-      );
+        }
+        void err;
+      });
     } catch {
       setStatus('error');
     }
+  };
+
+  const flipCamera = () => {
+    readerRef.current?.reset();
+    const next = (cameraIndex + 1) % cameras.length;
+    setCameraIndex(next);
+    startScan(next);
+  };
+
+  const stop = () => {
+    readerRef.current?.reset();
+    readerRef.current = null;
+    setStatus('idle');
   };
 
   const addProduct = async () => {
@@ -141,34 +165,54 @@ function ScanForm() {
   };
 
   return (
-    <div className="text-center space-y-4">
+    <div className="space-y-4">
       {status === 'idle' && (
-        <button onClick={startScan} className="w-full bg-green-600 text-white rounded-xl py-4 text-lg font-medium">
+        <button onClick={() => startScan(0)} className="w-full bg-green-600 text-white rounded-xl py-4 text-lg font-medium">
           📷 Start Scanning
         </button>
       )}
+
       {status === 'scanning' && (
-        <div>
-          <div id="qr-reader" className="mx-auto max-w-sm rounded-xl overflow-hidden" />
-          <p className="text-sm text-gray-500 mt-2">Point camera at a barcode</p>
+        <div className="space-y-3">
+          <div className="relative rounded-xl overflow-hidden bg-black aspect-square">
+            <video ref={videoRef} className="w-full h-full object-cover" />
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-48 h-48 border-2 border-white rounded-xl opacity-60" />
+            </div>
+          </div>
+          <div className="flex gap-3">
+            {cameras.length > 1 && (
+              <button onClick={flipCamera} className="flex-1 bg-gray-100 text-gray-700 rounded-lg py-3 text-sm font-medium">
+                🔄 Flip Camera
+              </button>
+            )}
+            <button onClick={stop} className="flex-1 bg-gray-100 text-gray-700 rounded-lg py-3 text-sm font-medium">
+              Cancel
+            </button>
+          </div>
+          <p className="text-center text-sm text-gray-500">Point at a barcode</p>
         </div>
       )}
+
       {status === 'found' && product && (
         <div className="space-y-4">
-          <p className="text-lg font-medium">{product.name}</p>
-          {product.category && <p className="text-gray-500 text-sm">{product.category}</p>}
+          <div className="bg-green-50 rounded-xl p-4 text-center">
+            <p className="text-lg font-semibold text-gray-900">{product.name}</p>
+            {product.category && <p className="text-gray-500 text-sm mt-1">{product.category}</p>}
+          </div>
           <button onClick={addProduct} className="w-full bg-green-600 text-white rounded-lg py-3 font-medium">
             Add to fridge
           </button>
-          <button onClick={() => setStatus('idle')} className="w-full text-gray-500 text-sm py-2">
+          <button onClick={() => { setProduct(null); startScan(cameraIndex); }} className="w-full bg-gray-100 text-gray-700 rounded-lg py-3 text-sm">
             Scan another
           </button>
         </div>
       )}
+
       {status === 'error' && (
-        <div className="space-y-2">
-          <p className="text-red-500">Could not find product</p>
-          <button onClick={() => setStatus('idle')} className="w-full bg-gray-100 text-gray-700 rounded-lg py-3 text-sm">
+        <div className="space-y-3 text-center">
+          <p className="text-red-500">Product not found</p>
+          <button onClick={() => startScan(cameraIndex)} className="w-full bg-gray-100 text-gray-700 rounded-lg py-3 text-sm">
             Try again
           </button>
         </div>
