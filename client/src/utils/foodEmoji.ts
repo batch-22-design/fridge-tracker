@@ -1,47 +1,78 @@
-import {
-  Drumstick, Beef, Ham, Fish, Shrimp,
-  Soup, Salad, Pizza, Sandwich, Hamburger,
-  Egg, EggFried, Milk, Carrot, LeafyGreen,
-  Apple, Cherry, Grape, Wheat, Cookie,
-  Cake, IceCreamCone, Coffee, Beer, Wine,
-  GlassWater, CupSoda, Leaf, Nut,
-  UtensilsCrossed,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-
-export function getFoodIcon(name: string): LucideIcon {
+export function getFoodIcon(name: string): string {
   const n = name.toLowerCase();
-  if (/chicken|poultry|hen|drumstick/.test(n)) return Drumstick;
-  if (/beef|steak|mince|meatball/.test(n)) return Beef;
-  if (/pork|bacon|ham|sausage/.test(n)) return Ham;
-  if (/lamb|mutton/.test(n)) return Beef;
-  if (/prawn|shrimp|seafood/.test(n)) return Shrimp;
-  if (/fish|salmon|tuna|cod/.test(n)) return Fish;
-  if (/soup|stew|broth|stock/.test(n)) return Soup;
-  if (/salad/.test(n)) return Salad;
-  if (/pizza/.test(n)) return Pizza;
-  if (/sandwich|wrap|sub/.test(n)) return Sandwich;
-  if (/burger/.test(n)) return Hamburger;
-  if (/fried egg/.test(n)) return EggFried;
-  if (/egg/.test(n)) return Egg;
-  if (/milk|cream|yogurt|yoghurt|dairy/.test(n)) return Milk;
-  if (/carrot|veggie|vegetable|broccoli|spinach|pea|peas/.test(n)) return Carrot;
-  if (/lettuce|kale|leafy|greens/.test(n)) return LeafyGreen;
-  if (/herb|basil|mint|parsley|coriander/.test(n)) return Leaf;
-  if (/apple|fruit|orange|banana|berry|mango/.test(n)) return Apple;
-  if (/cherry/.test(n)) return Cherry;
-  if (/grape|raisin/.test(n)) return Grape;
-  if (/pasta|bread|rice|wheat|grain|flour|noodle|cereal/.test(n)) return Wheat;
-  if (/nut|almond|cashew|walnut|peanut/.test(n)) return Nut;
-  if (/cookie|biscuit/.test(n)) return Cookie;
-  if (/cake|dessert|pudding|donut/.test(n)) return Cake;
-  if (/ice cream/.test(n)) return IceCreamCone;
-  if (/coffee|tea|espresso|latte/.test(n)) return Coffee;
-  if (/beer|ale|lager/.test(n)) return Beer;
-  if (/wine|champagne|prosecco/.test(n)) return Wine;
-  if (/water/.test(n)) return GlassWater;
-  if (/juice|soda|drink|squash/.test(n)) return CupSoda;
-  return UtensilsCrossed;
+  if (/chicken|poultry|hen|drumstick/.test(n)) return 'noto:poultry-leg';
+  if (/beef|steak|mince|meatball/.test(n)) return 'noto:cut-of-meat';
+  if (/bacon/.test(n)) return 'noto:bacon';
+  if (/pork|ham|sausage|hot.?dog/.test(n)) return 'noto:meat-on-bone';
+  if (/lamb|mutton/.test(n)) return 'noto:meat-on-bone';
+  if (/fried.shrimp|prawn/.test(n)) return 'noto:fried-shrimp';
+  if (/shrimp|seafood|crab|lobster/.test(n)) return 'noto:shrimp';
+  if (/fish|salmon|tuna|cod/.test(n)) return 'noto:fish';
+  if (/soup|stew|stock|broth/.test(n)) return 'noto:pot-of-food';
+  if (/ramen|noodle|udon|soba/.test(n)) return 'noto:steaming-bowl';
+  if (/pasta|spaghetti|linguine|penne|macaroni|lasagne|lasagna/.test(n)) return 'noto:spaghetti';
+  if (/salad/.test(n)) return 'noto:green-salad';
+  if (/pizza/.test(n)) return 'noto:pizza';
+  if (/burger/.test(n)) return 'noto:hamburger';
+  if (/sandwich|sub/.test(n)) return 'noto:sandwich';
+  if (/taco/.test(n)) return 'noto:taco';
+  if (/burrito/.test(n)) return 'noto:burrito';
+  if (/wrap|flatbread|pita/.test(n)) return 'noto:stuffed-flatbread';
+  if (/curry/.test(n)) return 'noto:curry-rice';
+  if (/rice|pilaf/.test(n)) return 'noto:cooked-rice';
+  if (/cereal|oat|porridge/.test(n)) return 'noto:bowl-with-spoon';
+  if (/egg/.test(n)) return 'noto:egg';
+  if (/milk|cream|yogurt|yoghurt/.test(n)) return 'noto:glass-of-milk';
+  if (/cheese/.test(n)) return 'noto:cheese-wedge';
+  if (/butter/.test(n)) return 'noto:butter';
+  if (/bread|toast|bun|roll/.test(n)) return 'noto:bread';
+  if (/croissant|baguette/.test(n)) return 'noto:baguette-bread';
+  if (/waffle/.test(n)) return 'noto:waffle';
+  if (/pancake/.test(n)) return 'noto:pancakes';
+  if (/cookie|biscuit/.test(n)) return 'noto:cookie';
+  if (/cake|cupcake/.test(n)) return 'noto:birthday-cake';
+  if (/doughnut|donut/.test(n)) return 'noto:doughnut';
+  if (/ice.?cream/.test(n)) return 'noto:soft-ice-cream';
+  if (/chocolate/.test(n)) return 'noto:chocolate-bar';
+  if (/popcorn/.test(n)) return 'noto:popcorn';
+  if (/fortune.?cookie/.test(n)) return 'noto:fortune-cookie';
+  if (/carrot/.test(n)) return 'noto:carrot';
+  if (/broccoli/.test(n)) return 'noto:broccoli';
+  if (/lettuce|kale|spinach|leafy|greens/.test(n)) return 'noto:leafy-green';
+  if (/pea|veggie|vegetable|veg\b/.test(n)) return 'noto:leafy-green';
+  if (/mushroom/.test(n)) return 'noto:mushroom';
+  if (/corn/.test(n)) return 'noto:ear-of-corn';
+  if (/potato|chips|fries/.test(n)) return 'noto:potato';
+  if (/tomato/.test(n)) return 'noto:tomato';
+  if (/eggplant|aubergine/.test(n)) return 'noto:eggplant';
+  if (/onion/.test(n)) return 'noto:onion';
+  if (/garlic/.test(n)) return 'noto:garlic';
+  if (/avocado/.test(n)) return 'noto:avocado';
+  if (/apple/.test(n)) return 'noto:red-apple';
+  if (/banana/.test(n)) return 'noto:banana';
+  if (/strawberry/.test(n)) return 'noto:strawberry';
+  if (/blueberry|blueberries|berry|berries/.test(n)) return 'noto:blueberries';
+  if (/grape/.test(n)) return 'noto:grapes';
+  if (/watermelon/.test(n)) return 'noto:watermelon';
+  if (/pineapple/.test(n)) return 'noto:pineapple';
+  if (/kiwi/.test(n)) return 'noto:kiwi-fruit';
+  if (/coconut/.test(n)) return 'noto:coconut';
+  if (/lemon/.test(n)) return 'noto:lemon';
+  if (/lime/.test(n)) return 'noto:lime';
+  if (/orange|mandarin|clementine/.test(n)) return 'noto:red-apple';
+  if (/fruit/.test(n)) return 'noto:red-apple';
+  if (/nut|almond|cashew|walnut/.test(n)) return 'noto:chestnut';
+  if (/peanut/.test(n)) return 'noto:peanuts';
+  if (/honey/.test(n)) return 'noto:honey-pot';
+  if (/salt|pepper|spice|condiment|sauce|ketchup|mustard|mayo/.test(n)) return 'noto:salt';
+  if (/coffee|espresso|latte|cappuccino/.test(n)) return 'noto:hot-beverage';
+  if (/tea/.test(n)) return 'noto:teacup-without-handle';
+  if (/beer|ale|lager/.test(n)) return 'noto:beer-mug';
+  if (/wine|champagne|prosecco/.test(n)) return 'noto:wine-glass';
+  if (/juice|soda|drink|squash/.test(n)) return 'noto:jar';
+  if (/leftover|bento|container/.test(n)) return 'noto:bento-box';
+  if (/takeout|takeaway/.test(n)) return 'noto:takeout-box';
+  return 'noto:fork-and-knife-with-plate';
 }
 
 // kept for QrItemScreen large display
