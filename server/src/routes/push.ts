@@ -9,7 +9,7 @@ const HOUSEHOLD_ID = 1;
 
 // POST /push/subscribe — save push subscription
 pushRouter.post('/subscribe', async (req, res) => {
-  const { subscription } = z.object({ subscription: z.record(z.unknown()) }).parse(req.body);
+  const { subscription } = z.object({ subscription: z.record(z.string(), z.unknown()) }).parse(req.body);
   await query(
     'INSERT INTO push_subscriptions (household_id, subscription_json) VALUES ($1, $2)',
     [HOUSEHOLD_ID, JSON.stringify(subscription)]
