@@ -9,10 +9,9 @@ import LoadingSpinner from '../components/LoadingSpinner';
 export default function ItemDetailScreen() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { items, loading, refresh } = useItems();
+  const { items, loading } = useItems();
   const item = items.find((i) => i.id === Number(id));
   const [saveError, setSaveError] = useState('');
-  const [saved, setSaved] = useState(false);
   const [container, setContainer] = useState<Container | null>(null);
 
   useEffect(() => {
@@ -40,10 +39,11 @@ export default function ItemDetailScreen() {
     setSaveError('');
     setSaved(false);
     try {
-      await itemsApi.update(item.id, data);
-      refresh();
-      setSaved(true);
-      setTimeout(() => navigate('/dashboard'), 800);
+      await itemsApi.update(item.id, {
+        ...data,
+        expiry_date: data.expiry_date || undefined,
+      });
+      navigate('/dashboard');
     } catch {
       setSaveError('Failed to save. Please try again.');
     }
@@ -111,9 +111,8 @@ export default function ItemDetailScreen() {
           </>
         )}
         {saveError && <p className="text-red-500 text-sm text-center">{saveError}</p>}
-        {saved && <p className="text-green-600 text-sm text-center font-medium">Saved!</p>}
-        <button type="submit" disabled={isSubmitting || saved} className="w-full bg-green-600 text-white rounded-lg py-3 font-medium disabled:opacity-50">
-          {isSubmitting ? 'Saving...' : saved ? 'Saved ✓' : 'Save changes'}
+        <button type="submit" disabled={isSubmitting} className="w-full bg-green-600 text-white rounded-lg py-3 font-medium disabled:opacity-50">
+          {isSubmitting ? 'Saving...' : 'Save changes'}
         </button>
       </form>
 
