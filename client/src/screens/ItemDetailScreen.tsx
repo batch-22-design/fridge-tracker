@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useItems } from '../hooks/useItems';
@@ -9,6 +10,8 @@ export default function ItemDetailScreen() {
   const navigate = useNavigate();
   const { items, loading, refresh } = useItems();
   const item = items.find((i) => i.id === Number(id));
+  const [saveError, setSaveError] = useState('');
+  const [saved, setSaved] = useState(false);
 
   const { register, handleSubmit, formState: { isSubmitting } } = useForm<ItemInput>({
     values: item ? {
@@ -16,7 +19,7 @@ export default function ItemDetailScreen() {
       category: item.category,
       quantity: item.quantity,
       unit: item.unit,
-      expiry_date: item.expiry_date,
+      expiry_date: item.expiry_date?.slice(0, 10),
     } : undefined,
   });
 
@@ -26,9 +29,16 @@ export default function ItemDetailScreen() {
   const isLeftover = !!item.qr_token;
 
   const onSubmit = async (data: ItemInput) => {
-    await itemsApi.update(item.id, data);
-    refresh();
-    navigate('/dashboard');
+    setSaveError('');
+    setSaved(false);
+    try {
+      await itemsApi.update(item.id, data);
+      refresh();
+      setSaved(true);
+      setTimeout(() => navigate('/dashboard'), 800);
+    } catch {
+      setSaveError('Failed to save. Please try again.');
+    }
   };
 
   const handleRemove = async (reason: 'used' | 'expired' | 'discarded') => {
@@ -73,8 +83,10 @@ export default function ItemDetailScreen() {
             </div>
           </>
         )}
-        <button type="submit" disabled={isSubmitting} className="w-full bg-green-600 text-white rounded-lg py-3 font-medium disabled:opacity-50">
-          {isSubmitting ? 'Saving...' : 'Save changes'}
+        {saveError && <p className="text-red-500 text-sm text-center">{saveError}</p>}
+        {saved && <p className="text-green-600 text-sm text-center font-medium">Saved!</p>}
+        <button type="submit" disabled={isSubmitting || saved} className="w-full bg-green-600 text-white rounded-lg py-3 font-medium disabled:opacity-50">
+          {isSubmitting ? 'Saving...' : saved ? 'Saved ✓' : 'Save changes'}
         </button>
       </form>
 
