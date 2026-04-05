@@ -37,7 +37,6 @@ export default function ItemDetailScreen() {
 
   const onSubmit = async (data: ItemInput) => {
     setSaveError('');
-    setSaved(false);
     try {
       await itemsApi.update(item.id, {
         ...data,
