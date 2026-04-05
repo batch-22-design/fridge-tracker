@@ -452,36 +452,47 @@ function LeftoverStickerScanner({
     controlsRef.current = null;
     setScanning(true);
     setError('');
+    let handled = false;
     try {
       const { BrowserMultiFormatReader } = await import('@zxing/browser');
       const reader = new BrowserMultiFormatReader();
       const controls = await reader.decodeFromConstraints(
         { video: { facingMode: { ideal: facing } } },
         videoRef.current!,
-        async (result, err) => {
-          if (result) {
-            controls.stop();
-            controlsRef.current = null;
+        async (result, _err) => {
+          if (!result || handled) return;
+          handled = true;
+          controlsRef.current?.stop();
+          controlsRef.current = null;
+          try {
             const text = result.getText();
             const uuidMatch = text.match(UUID_RE);
-            if (uuidMatch) {
-              const uuid = uuidMatch[0];
-              // Check if this sticker is already in use
-              try {
-                await itemsApi.getByQrToken(uuid);
-                setError('This sticker is already linked to a food item. Use a different one.');
-                setScanning(false);
-              } catch {
-                // Not found = free sticker, link it
-                await itemsApi.create({ name: foodData.name, expiry_date: foodData.expiry_date, qr_token: uuid, category: 'Leftovers' });
-                onDone();
-              }
-            } else {
-              setError('That doesn\'t look like a fridge sticker. Try again.');
+            if (!uuidMatch) {
+              setError("That doesn't look like a fridge sticker. Try again.");
               setScanning(false);
+              return;
             }
+            const uuid = uuidMatch[0];
+            let alreadyUsed = false;
+            try {
+              await itemsApi.getByQrToken(uuid);
+              alreadyUsed = true;
+            } catch (e: unknown) {
+              const status = (e as { response?: { status?: number } })?.response?.status;
+              if (status !== 404) throw e; // real error, re-throw
+            }
+            if (alreadyUsed) {
+              setError('This sticker is already linked to a food item. Use a different one.');
+              setScanning(false);
+              return;
+            }
+            await itemsApi.create({ name: foodData.name, expiry_date: foodData.expiry_date, qr_token: uuid, category: 'Leftovers' });
+            onDone();
+          } catch {
+            setError('Something went wrong. Please try again.');
+            setScanning(false);
+            handled = false;
           }
-          void err;
         }
       );
       controlsRef.current = controls;
