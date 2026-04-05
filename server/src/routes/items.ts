@@ -14,6 +14,7 @@ const itemSchema = z.object({
   quantity: z.number().positive().optional(),
   unit: z.string().optional(),
   expiry_date: z.string().optional(),
+  qr_token: z.string().optional(),
 });
 
 itemsRouter.get('/', async (_req, res) => {
@@ -29,11 +30,20 @@ itemsRouter.get('/', async (_req, res) => {
 itemsRouter.post('/', async (req, res) => {
   const body = itemSchema.parse(req.body);
   const [item] = await query(
-    `INSERT INTO items (household_id, name, category, quantity, unit, expiry_date)
-     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-    [HOUSEHOLD_ID, body.name, body.category, body.quantity, body.unit, body.expiry_date]
+    `INSERT INTO items (household_id, name, category, quantity, unit, expiry_date, qr_token)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+    [HOUSEHOLD_ID, body.name, body.category, body.quantity, body.unit, body.expiry_date, body.qr_token]
   );
   res.status(201).json(item);
+});
+
+itemsRouter.get('/qr/:token', async (req, res) => {
+  const [item] = await query(
+    'SELECT * FROM items WHERE qr_token = $1 AND removed_at IS NULL',
+    [req.params.token]
+  );
+  if (!item) { res.status(404).json({ error: 'QR code not found' }); return; }
+  res.json(item);
 });
 
 itemsRouter.put('/:id', async (req, res) => {
@@ -44,10 +54,11 @@ itemsRouter.put('/:id', async (req, res) => {
        category = COALESCE($2, category),
        quantity = COALESCE($3, quantity),
        unit = COALESCE($4, unit),
-       expiry_date = COALESCE($5, expiry_date)
-     WHERE id = $6 AND household_id = $7 AND removed_at IS NULL
+       expiry_date = COALESCE($5, expiry_date),
+       qr_token = COALESCE($6, qr_token)
+     WHERE id = $7 AND household_id = $8 AND removed_at IS NULL
      RETURNING *`,
-    [body.name, body.category, body.quantity, body.unit, body.expiry_date, req.params.id, HOUSEHOLD_ID]
+    [body.name, body.category, body.quantity, body.unit, body.expiry_date, body.qr_token, req.params.id, HOUSEHOLD_ID]
   );
   if (!item) { res.status(404).json({ error: 'Item not found' }); return; }
   res.json(item);

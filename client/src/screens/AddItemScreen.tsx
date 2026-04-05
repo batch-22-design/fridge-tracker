@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { itemsApi, type ItemInput } from '../api/items';
 
-type Tab = 'manual' | 'scan' | 'receipt';
+type Tab = 'manual' | 'scan' | 'receipt' | 'leftovers';
 
 export default function AddItemScreen() {
   const [tab, setTab] = useState<Tab>('manual');
@@ -13,22 +13,29 @@ export default function AddItemScreen() {
       <h1 className="text-xl font-bold text-gray-900 mb-4">Add Item</h1>
 
       {/* Tabs */}
-      <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
-        {(['manual', 'scan', 'receipt'] as Tab[]).map((t) => (
+      <div className="grid grid-cols-4 bg-gray-100 rounded-xl p-1 mb-6 gap-1">
+        {([
+          ['manual', '✏️', 'Manual'],
+          ['scan', '📷', 'Scan'],
+          ['leftovers', '🥡', 'Leftovers'],
+          ['receipt', '🧾', 'Receipt'],
+        ] as [Tab, string, string][]).map(([t, icon, label]) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors capitalize ${
+            className={`py-2 text-xs font-medium rounded-lg transition-colors ${
               tab === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
             }`}
           >
-            {t === 'manual' ? '✏️ Manual' : t === 'scan' ? '📷 Scan' : '🧾 Receipt'}
+            <span className="block">{icon}</span>
+            {label}
           </button>
         ))}
       </div>
 
       {tab === 'manual' && <ManualForm />}
       {tab === 'scan' && <ScanForm />}
+      {tab === 'leftovers' && <LeftoversForm />}
       {tab === 'receipt' && <ReceiptForm />}
     </div>
   );
@@ -102,8 +109,10 @@ function ManualForm() {
 }
 
 function ScanForm() {
-  const [status, setStatus] = useState<'idle' | 'scanning' | 'found' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'scanning' | 'found' | 'error' | 'qr-found' | 'qr-new'>('idle');
   const [product, setProduct] = useState<{ name: string; category?: string } | null>(null);
+  const [qrItem, setQrItem] = useState<import('../api/items').Item | null>(null);
+  const [scannedUuid, setScannedUuid] = useState<string>('');
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
@@ -116,6 +125,7 @@ function ScanForm() {
     try {
       const { BrowserMultiFormatReader } = await import('@zxing/browser');
       const reader = new BrowserMultiFormatReader();
+      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       const controls = await reader.decodeFromConstraints(
         { video: { facingMode: { ideal: facing } } },
         videoRef.current!,
@@ -123,12 +133,24 @@ function ScanForm() {
           if (result) {
             controls.stop();
             controlsRef.current = null;
-            try {
-              const p = await itemsApi.scan(result.getText());
-              setProduct(p);
-              setStatus('found');
-            } catch {
-              setStatus('error');
+            const text = result.getText();
+            if (UUID_RE.test(text)) {
+              setScannedUuid(text);
+              try {
+                const item = await itemsApi.getByQrToken(text);
+                setQrItem(item);
+                setStatus('qr-found');
+              } catch {
+                setStatus('qr-new');
+              }
+            } else {
+              try {
+                const p = await itemsApi.scan(text);
+                setProduct(p);
+                setStatus('found');
+              } catch {
+                setStatus('error');
+              }
             }
           }
           void err;
@@ -209,7 +231,142 @@ function ScanForm() {
           </button>
         </div>
       )}
+
+      {status === 'qr-found' && qrItem && (
+        <div className="space-y-4">
+          <div className="bg-green-50 rounded-xl p-4 text-center">
+            <p className="text-lg font-semibold text-gray-900">{qrItem.name}</p>
+            {qrItem.expiry_date && (
+              <p className="text-gray-500 text-sm mt-1">Eat by {qrItem.expiry_date}</p>
+            )}
+          </div>
+          <button
+            onClick={async () => { await itemsApi.remove(qrItem.id, 'used'); navigate('/dashboard'); }}
+            className="w-full bg-green-600 text-white rounded-lg py-3 font-medium"
+          >
+            Mark as used
+          </button>
+          <button onClick={() => startScan()} className="w-full bg-gray-100 text-gray-700 rounded-lg py-3 text-sm">
+            Scan another
+          </button>
+        </div>
+      )}
+
+      {status === 'qr-new' && (
+        <QrRegisterForm uuid={scannedUuid} onDone={() => navigate('/dashboard')} onCancel={() => setStatus('idle')} />
+      )}
     </div>
+  );
+}
+
+function QrRegisterForm({ uuid, onDone, onCancel }: { uuid: string; onDone: () => void; onCancel: () => void }) {
+  const { register, handleSubmit, formState: { isSubmitting } } = useForm<{ name: string; expiry_date: string }>();
+  const onSubmit = async (data: { name: string; expiry_date: string }) => {
+    await itemsApi.create({ name: data.name, expiry_date: data.expiry_date, qr_token: uuid });
+    onDone();
+  };
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-gray-500 text-center">New sticker — what's in this container?</p>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">What is it? *</label>
+          <input
+            {...register('name', { required: true })}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            placeholder="e.g. Leftover pasta"
+            autoFocus
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Eat by *</label>
+          <input
+            type="date"
+            {...register('expiry_date', { required: true })}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full bg-green-600 text-white rounded-lg py-3 font-medium disabled:opacity-50"
+        >
+          {isSubmitting ? 'Saving...' : 'Save'}
+        </button>
+        <button type="button" onClick={onCancel} className="w-full text-gray-500 text-sm py-2">
+          Cancel
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function LeftoversForm() {
+  const [state, setState] = useState<'form' | 'qr'>('form');
+  const [qrDataUrl, setQrDataUrl] = useState('');
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<{ name: string; expiry_date: string }>();
+  const navigate = useNavigate();
+
+  const onSubmit = async (data: { name: string; expiry_date: string }) => {
+    const uuid = crypto.randomUUID();
+    const { default: QRCode } = await import('qrcode');
+    const dataUrl = await QRCode.toDataURL(uuid, { width: 300, margin: 2 });
+    await itemsApi.create({ name: data.name, expiry_date: data.expiry_date, qr_token: uuid });
+    setQrDataUrl(dataUrl);
+    setState('qr');
+  };
+
+  if (state === 'qr') {
+    return (
+      <div className="space-y-4 text-center">
+        <p className="text-sm text-gray-500">Print this sticker and stick it on the container</p>
+        <img src={qrDataUrl} alt="QR sticker" className="mx-auto rounded-xl border border-gray-200" />
+        <a
+          href={qrDataUrl}
+          download="fridge-sticker.png"
+          className="block w-full bg-green-600 text-white rounded-lg py-3 font-medium"
+        >
+          ⬇️ Download Sticker
+        </a>
+        <button onClick={() => setState('form')} className="w-full bg-gray-100 text-gray-700 rounded-lg py-3 text-sm">
+          Add Another
+        </button>
+        <button onClick={() => navigate('/dashboard')} className="w-full text-gray-500 text-sm py-2">
+          Done
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">What is it? *</label>
+        <input
+          {...register('name', { required: 'Required' })}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          placeholder="e.g. Leftover pasta"
+          autoFocus
+        />
+        {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Eat by *</label>
+        <input
+          type="date"
+          {...register('expiry_date', { required: 'Required' })}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+        />
+        {errors.expiry_date && <p className="text-red-500 text-xs mt-1">{errors.expiry_date.message}</p>}
+      </div>
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="w-full bg-green-600 text-white rounded-lg py-3 font-medium disabled:opacity-50"
+      >
+        {isSubmitting ? 'Generating...' : 'Generate Sticker'}
+      </button>
+    </form>
   );
 }
 

@@ -20,6 +20,7 @@ export interface ItemInput {
   quantity?: number;
   unit?: string;
   expiry_date?: string;
+  qr_token?: string;
 }
 
 export const itemsApi = {
@@ -38,4 +39,7 @@ export const itemsApi = {
 
   extract: (image: string, mimeType: string) =>
     api.post<ItemInput[]>('/items/extract', { image, mimeType }).then((r) => r.data),
+
+  getByQrToken: (token: string) =>
+    api.get<Item>(`/items/qr/${token}`).then((r) => r.data),
 };
