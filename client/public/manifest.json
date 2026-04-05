@@ -1,0 +1,9 @@
+{
+  "name": "Fridge Tracker",
+  "short_name": "Fridge",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "icons": []
+}
