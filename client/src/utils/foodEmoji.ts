@@ -1,0 +1,34 @@
+export function foodEmoji(name: string): string {
+  const n = name.toLowerCase();
+  if (/chicken|poultry|hen/.test(n)) return '🍗';
+  if (/beef|steak|mince|meatball/.test(n)) return '🥩';
+  if (/pork|bacon|ham|sausage/.test(n)) return '🥓';
+  if (/lamb|mutton/.test(n)) return '🍖';
+  if (/fish|salmon|tuna|cod|prawn|shrimp|seafood/.test(n)) return '🐟';
+  if (/pasta|spaghetti|noodle|macaroni|lasagne|lasagna/.test(n)) return '🍝';
+  if (/rice|fried rice|pilaf/.test(n)) return '🍚';
+  if (/soup|stew|broth/.test(n)) return '🍲';
+  if (/salad/.test(n)) return '🥗';
+  if (/pizza/.test(n)) return '🍕';
+  if (/burger|sandwich|wrap/.test(n)) return '🍔';
+  if (/curry/.test(n)) return '🍛';
+  if (/taco|burrito|mexican/.test(n)) return '🌮';
+  if (/cake|dessert|pudding|cookie|biscuit/.test(n)) return '🍰';
+  if (/bread|toast|roll|bun/.test(n)) return '🍞';
+  if (/egg/.test(n)) return '🥚';
+  if (/cheese/.test(n)) return '🧀';
+  if (/milk|cream|yogurt|yoghurt/.test(n)) return '🥛';
+  if (/butter/.test(n)) return '🧈';
+  if (/veggie|vegetable|veg|carrot|broccoli|spinach|pea/.test(n)) return '🥦';
+  if (/fruit|apple|orange|banana|berry/.test(n)) return '🍎';
+  if (/lime|lemon/.test(n)) return '🍋';
+  if (/potato|chips|fries/.test(n)) return '🥔';
+  if (/mushroom/.test(n)) return '🍄';
+  if (/corn/.test(n)) return '🌽';
+  if (/stock|broth/.test(n)) return '🫙';
+  if (/sauce|ketchup|mustard|mayo/.test(n)) return '🧴';
+  if (/juice|drink|water|soda/.test(n)) return '🥤';
+  if (/wine|beer|alcohol/.test(n)) return '🍷';
+  if (/leftover/.test(n)) return '🥡';
+  return '🥡';
+}
