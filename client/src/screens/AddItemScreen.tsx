@@ -262,7 +262,7 @@ function ScanForm() {
 function QrRegisterForm({ uuid, onDone, onCancel }: { uuid: string; onDone: () => void; onCancel: () => void }) {
   const { register, handleSubmit, formState: { isSubmitting } } = useForm<{ name: string; expiry_date: string }>();
   const onSubmit = async (data: { name: string; expiry_date: string }) => {
-    await itemsApi.create({ name: data.name, expiry_date: data.expiry_date, qr_token: uuid });
+    await itemsApi.create({ name: data.name, expiry_date: data.expiry_date, qr_token: uuid, category: 'Leftovers' });
     onDone();
   };
   return (
@@ -311,7 +311,7 @@ function LeftoversForm() {
     const uuid = crypto.randomUUID();
     const { default: QRCode } = await import('qrcode');
     const dataUrl = await QRCode.toDataURL(uuid, { width: 300, margin: 2 });
-    await itemsApi.create({ name: data.name, expiry_date: data.expiry_date, qr_token: uuid });
+    await itemsApi.create({ name: data.name, expiry_date: data.expiry_date, qr_token: uuid, category: 'Leftovers' });
     setQrDataUrl(dataUrl);
     setState('qr');
   };

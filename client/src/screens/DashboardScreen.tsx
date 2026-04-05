@@ -5,14 +5,18 @@ import { itemsApi } from '../api/items';
 import ItemCard from '../components/ItemCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 
-const CATEGORIES = ['All', 'Dairy', 'Meat', 'Produce', 'Grains', 'Drinks', 'Condiments', 'Other'];
+const CATEGORIES = ['All', 'Leftovers', 'Dairy', 'Meat', 'Produce', 'Grains', 'Drinks', 'Condiments', 'Other'];
 
 export default function DashboardScreen() {
   const { items, loading, error, refresh } = useItems();
   const [category, setCategory] = useState('All');
   const navigate = useNavigate();
 
-  const filtered = category === 'All' ? items : items.filter((i) => i.category === category);
+  const filtered = category === 'All'
+    ? items
+    : category === 'Leftovers'
+      ? items.filter((i) => !!i.qr_token)
+      : items.filter((i) => i.category === category);
 
   const handleRemove = async (id: number) => {
     await itemsApi.remove(id, 'used');

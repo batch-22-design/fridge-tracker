@@ -8,6 +8,7 @@ export interface Item {
   quantity?: number;
   unit?: string;
   expiry_date?: string;
+  qr_token?: string;
   added_by?: number;
   added_by_name?: string;
   added_at: string;
