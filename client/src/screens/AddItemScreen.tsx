@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { itemsApi, type ItemInput } from '../api/items';
 
-type Tab = 'manual' | 'scan' | 'receipt' | 'leftovers';
+type Tab = 'manual' | 'scan' | 'leftovers' | 'stickers' | 'receipt';
 
 export default function AddItemScreen() {
   const [tab, setTab] = useState<Tab>('manual');
@@ -13,11 +13,12 @@ export default function AddItemScreen() {
       <h1 className="text-xl font-bold text-gray-900 mb-4">Add Item</h1>
 
       {/* Tabs */}
-      <div className="grid grid-cols-4 bg-gray-100 rounded-xl p-1 mb-6 gap-1">
+      <div className="grid grid-cols-5 bg-gray-100 rounded-xl p-1 mb-6 gap-1">
         {([
           ['manual', '✏️', 'Manual'],
           ['scan', '📷', 'Scan'],
-          ['leftovers', '🥡', 'Leftovers'],
+          ['leftovers', '🥡', 'Leftover'],
+          ['stickers', '🏷️', 'Stickers'],
           ['receipt', '🧾', 'Receipt'],
         ] as [Tab, string, string][]).map(([t, icon, label]) => (
           <button
@@ -36,6 +37,7 @@ export default function AddItemScreen() {
       {tab === 'manual' && <ManualForm />}
       {tab === 'scan' && <ScanForm />}
       {tab === 'leftovers' && <LeftoversForm />}
+      {tab === 'stickers' && <StickerSheetForm />}
       {tab === 'receipt' && <ReceiptForm />}
     </div>
   );
@@ -304,26 +306,110 @@ function QrRegisterForm({ uuid, onDone, onCancel }: { uuid: string; onDone: () =
 }
 
 function LeftoversForm() {
-  const [state, setState] = useState<'form' | 'qr'>('form');
+  type LState = 'form' | 'link' | 'scanning' | 'qr';
+  const [lstate, setLstate] = useState<LState>('form');
+  const [foodData, setFoodData] = useState<{ name: string; expiry_date: string } | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState('');
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<{ name: string; expiry_date: string }>();
+  const [generating, setGenerating] = useState(false);
+  const { register, handleSubmit, formState: { errors } } = useForm<{ name: string; expiry_date: string }>();
   const navigate = useNavigate();
 
-  const onSubmit = async (data: { name: string; expiry_date: string }) => {
+  const onFormSubmit = (data: { name: string; expiry_date: string }) => {
+    setFoodData(data);
+    setLstate('link');
+  };
+
+  const makeNewSticker = async () => {
+    if (!foodData) return;
+    setGenerating(true);
     const uuid = crypto.randomUUID();
     const qrUrl = `${window.location.origin}/qr/${uuid}`;
     const { default: QRCode } = await import('qrcode');
     const dataUrl = await QRCode.toDataURL(qrUrl, { width: 300, margin: 2 });
-    await itemsApi.create({ name: data.name, expiry_date: data.expiry_date, qr_token: uuid, category: 'Leftovers' });
+    await itemsApi.create({ name: foodData.name, expiry_date: foodData.expiry_date, qr_token: uuid, category: 'Leftovers' });
     setQrDataUrl(dataUrl);
-    setState('qr');
+    setGenerating(false);
+    setLstate('qr');
   };
 
-  if (state === 'qr') {
+  if (lstate === 'form') {
+    return (
+      <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">What is it? *</label>
+          <input
+            {...register('name', { required: 'Required' })}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            placeholder="e.g. Leftover pasta"
+            autoFocus
+          />
+          {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Eat by *</label>
+          <input
+            type="date"
+            {...register('expiry_date', { required: 'Required' })}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          />
+          {errors.expiry_date && <p className="text-red-500 text-xs mt-1">{errors.expiry_date.message}</p>}
+        </div>
+        <button type="submit" className="w-full bg-green-600 text-white rounded-lg py-3 font-medium">
+          Next →
+        </button>
+      </form>
+    );
+  }
+
+  if (lstate === 'link') {
+    return (
+      <div className="space-y-3">
+        <p className="text-sm text-gray-500 text-center mb-4">
+          How do you want to tag <span className="font-medium text-gray-800">{foodData?.name}</span>?
+        </p>
+        <button
+          onClick={() => setLstate('scanning')}
+          className="w-full flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-4 text-left shadow-sm"
+        >
+          <span className="text-2xl">📷</span>
+          <div>
+            <p className="font-medium text-gray-900 text-sm">Scan a sticker already on a container</p>
+            <p className="text-xs text-gray-500 mt-0.5">Point camera at one of your pre-printed stickers</p>
+          </div>
+        </button>
+        <button
+          onClick={makeNewSticker}
+          disabled={generating}
+          className="w-full flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-4 text-left shadow-sm disabled:opacity-50"
+        >
+          <span className="text-2xl">✨</span>
+          <div>
+            <p className="font-medium text-gray-900 text-sm">Generate a new sticker</p>
+            <p className="text-xs text-gray-500 mt-0.5">Create a QR code to print and stick on now</p>
+          </div>
+        </button>
+        <button onClick={() => setLstate('form')} className="w-full text-gray-400 text-sm py-2">
+          ← Back
+        </button>
+      </div>
+    );
+  }
+
+  if (lstate === 'scanning') {
+    return (
+      <LeftoverStickerScanner
+        foodData={foodData!}
+        onDone={() => navigate('/dashboard')}
+        onBack={() => setLstate('link')}
+      />
+    );
+  }
+
+  if (lstate === 'qr') {
     return (
       <div className="space-y-4 text-center">
         <p className="text-sm text-gray-500">Print this sticker and stick it on the container</p>
-        <img src={qrDataUrl} alt="QR sticker" className="mx-auto rounded-xl border border-gray-200" />
+        <img src={qrDataUrl} alt="QR sticker" className="mx-auto rounded-xl border border-gray-200 w-48 h-48" />
         <a
           href={qrDataUrl}
           download="fridge-sticker.png"
@@ -331,7 +417,7 @@ function LeftoversForm() {
         >
           ⬇️ Download Sticker
         </a>
-        <button onClick={() => setState('form')} className="w-full bg-gray-100 text-gray-700 rounded-lg py-3 text-sm">
+        <button onClick={() => { setLstate('form'); setFoodData(null); setQrDataUrl(''); }} className="w-full bg-gray-100 text-gray-700 rounded-lg py-3 text-sm">
           Add Another
         </button>
         <button onClick={() => navigate('/dashboard')} className="w-full text-gray-500 text-sm py-2">
@@ -341,35 +427,212 @@ function LeftoversForm() {
     );
   }
 
+  return null;
+}
+
+function LeftoverStickerScanner({
+  foodData,
+  onDone,
+  onBack,
+}: {
+  foodData: { name: string; expiry_date: string };
+  onDone: () => void;
+  onBack: () => void;
+}) {
+  const [scanning, setScanning] = useState(false);
+  const [error, setError] = useState('');
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const controlsRef = useRef<{ stop: () => void } | null>(null);
+
+  const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+  const startScan = async (facing: 'environment' | 'user' = facingMode) => {
+    controlsRef.current?.stop();
+    controlsRef.current = null;
+    setScanning(true);
+    setError('');
+    try {
+      const { BrowserMultiFormatReader } = await import('@zxing/browser');
+      const reader = new BrowserMultiFormatReader();
+      const controls = await reader.decodeFromConstraints(
+        { video: { facingMode: { ideal: facing } } },
+        videoRef.current!,
+        async (result, err) => {
+          if (result) {
+            controls.stop();
+            controlsRef.current = null;
+            const text = result.getText();
+            const uuidMatch = text.match(UUID_RE);
+            if (uuidMatch) {
+              const uuid = uuidMatch[0];
+              // Check if this sticker is already in use
+              try {
+                await itemsApi.getByQrToken(uuid);
+                setError('This sticker is already linked to a food item. Use a different one.');
+                setScanning(false);
+              } catch {
+                // Not found = free sticker, link it
+                await itemsApi.create({ name: foodData.name, expiry_date: foodData.expiry_date, qr_token: uuid, category: 'Leftovers' });
+                onDone();
+              }
+            } else {
+              setError('That doesn\'t look like a fridge sticker. Try again.');
+              setScanning(false);
+            }
+          }
+          void err;
+        }
+      );
+      controlsRef.current = controls;
+    } catch {
+      setError('Could not start camera.');
+      setScanning(false);
+    }
+  };
+
+  const flip = () => {
+    const next = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(next);
+    startScan(next);
+  };
+
+  const stop = () => {
+    controlsRef.current?.stop();
+    controlsRef.current = null;
+    setScanning(false);
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <div className="space-y-4">
+      <p className="text-sm text-gray-500 text-center">
+        Scan the blank sticker on the container you're filling
+      </p>
+      {!scanning && (
+        <button onClick={() => startScan()} className="w-full bg-green-600 text-white rounded-xl py-4 font-medium">
+          📷 Start Scanning
+        </button>
+      )}
+      {scanning && (
+        <div className="space-y-3">
+          <div className="relative rounded-xl overflow-hidden bg-black aspect-square">
+            <video ref={videoRef} className="w-full h-full object-cover" />
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-48 h-48 border-2 border-white rounded-xl opacity-60" />
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <button onClick={flip} className="flex-1 bg-gray-100 text-gray-700 rounded-lg py-3 text-sm font-medium">🔄 Flip</button>
+            <button onClick={stop} className="flex-1 bg-gray-100 text-gray-700 rounded-lg py-3 text-sm font-medium">Cancel</button>
+          </div>
+        </div>
+      )}
+      {error && (
+        <div className="space-y-2">
+          <p className="text-red-500 text-sm text-center">{error}</p>
+          <button onClick={() => startScan()} className="w-full bg-gray-100 text-gray-700 rounded-lg py-3 text-sm">Try Again</button>
+        </div>
+      )}
+      <button onClick={onBack} className="w-full text-gray-400 text-sm py-2">← Back</button>
+    </div>
+  );
+}
+
+function StickerSheetForm() {
+  const [count, setCount] = useState(8);
+  const [stickers, setStickers] = useState<string[]>([]);
+  const [generating, setGenerating] = useState(false);
+
+  const generate = async () => {
+    setGenerating(true);
+    const { default: QRCode } = await import('qrcode');
+    const urls = await Promise.all(
+      Array.from({ length: count }, async () => {
+        const uuid = crypto.randomUUID();
+        const qrUrl = `${window.location.origin}/qr/${uuid}`;
+        return QRCode.toDataURL(qrUrl, { width: 200, margin: 1 });
+      })
+    );
+    setStickers(urls);
+    setGenerating(false);
+  };
+
+  const printSheet = () => {
+    const win = window.open('', '_blank');
+    if (!win) return;
+    const cols = count <= 4 ? 2 : 4;
+    win.document.write(`<!DOCTYPE html><html><head><title>Fridge Stickers</title>
+<style>
+  body { margin: 0; padding: 8mm; font-family: sans-serif; background: white; }
+  .grid { display: grid; grid-template-columns: repeat(${cols}, 1fr); gap: 6mm; }
+  .sticker { text-align: center; border: 1.5px dashed #aaa; border-radius: 4mm; padding: 3mm; page-break-inside: avoid; }
+  img { width: 100%; display: block; }
+  p { margin: 2mm 0 0; font-size: 8pt; color: #888; }
+</style></head><body>
+<div class="grid">
+${stickers.map((url, i) => `<div class="sticker"><img src="${url}" /><p>Fridge sticker ${i + 1}</p></div>`).join('\n')}
+</div>
+<script>window.onload = function(){ window.print(); }<\/script>
+</body></html>`);
+    win.document.close();
+  };
+
+  return (
+    <div className="space-y-5">
+      <p className="text-sm text-gray-500">
+        Generate a sheet of blank stickers to print and pre-stick on your Tupperware.
+        When you put food in a container, open the Leftovers tab and scan the sticker to link them.
+      </p>
+
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">What is it? *</label>
-        <input
-          {...register('name', { required: 'Required' })}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-          placeholder="e.g. Leftover pasta"
-          autoFocus
-        />
-        {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
+        <p className="text-sm font-medium text-gray-700 mb-2">How many stickers?</p>
+        <div className="flex gap-2">
+          {[4, 8, 12, 16].map((n) => (
+            <button
+              key={n}
+              onClick={() => setCount(n)}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                count === n ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-600 border-gray-200'
+              }`}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
       </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Eat by *</label>
-        <input
-          type="date"
-          {...register('expiry_date', { required: 'Required' })}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-        />
-        {errors.expiry_date && <p className="text-red-500 text-xs mt-1">{errors.expiry_date.message}</p>}
-      </div>
+
       <button
-        type="submit"
-        disabled={isSubmitting}
+        onClick={generate}
+        disabled={generating}
         className="w-full bg-green-600 text-white rounded-lg py-3 font-medium disabled:opacity-50"
       >
-        {isSubmitting ? 'Generating...' : 'Generate Sticker'}
+        {generating ? 'Generating...' : `Generate ${count} Stickers`}
       </button>
-    </form>
+
+      {stickers.length > 0 && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-4 gap-2">
+            {stickers.map((url, i) => (
+              <div key={i} className="border border-dashed border-gray-300 rounded-lg p-1">
+                <img src={url} alt={`Sticker ${i + 1}`} className="w-full" />
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={printSheet}
+            className="w-full bg-gray-800 text-white rounded-lg py-3 font-medium"
+          >
+            🖨️ Print Sheet
+          </button>
+          <button
+            onClick={generate}
+            className="w-full bg-gray-100 text-gray-700 rounded-lg py-3 text-sm"
+          >
+            Regenerate
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
