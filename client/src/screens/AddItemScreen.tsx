@@ -125,7 +125,7 @@ function ScanForm() {
     try {
       const { BrowserMultiFormatReader } = await import('@zxing/browser');
       const reader = new BrowserMultiFormatReader();
-      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
       const controls = await reader.decodeFromConstraints(
         { video: { facingMode: { ideal: facing } } },
         videoRef.current!,
@@ -134,10 +134,12 @@ function ScanForm() {
             controls.stop();
             controlsRef.current = null;
             const text = result.getText();
-            if (UUID_RE.test(text)) {
-              setScannedUuid(text);
+            const uuidMatch = text.match(UUID_RE);
+            if (uuidMatch) {
+              const uuid = uuidMatch[0];
+              setScannedUuid(uuid);
               try {
-                const item = await itemsApi.getByQrToken(text);
+                const item = await itemsApi.getByQrToken(uuid);
                 setQrItem(item);
                 setStatus('qr-found');
               } catch {
@@ -309,8 +311,9 @@ function LeftoversForm() {
 
   const onSubmit = async (data: { name: string; expiry_date: string }) => {
     const uuid = crypto.randomUUID();
+    const qrUrl = `${window.location.origin}/qr/${uuid}`;
     const { default: QRCode } = await import('qrcode');
-    const dataUrl = await QRCode.toDataURL(uuid, { width: 300, margin: 2 });
+    const dataUrl = await QRCode.toDataURL(qrUrl, { width: 300, margin: 2 });
     await itemsApi.create({ name: data.name, expiry_date: data.expiry_date, qr_token: uuid, category: 'Leftovers' });
     setQrDataUrl(dataUrl);
     setState('qr');

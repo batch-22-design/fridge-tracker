@@ -23,6 +23,8 @@ export default function ItemDetailScreen() {
   if (loading) return <LoadingSpinner />;
   if (!item) return <p className="text-center py-8 text-gray-500">Item not found</p>;
 
+  const isLeftover = !!item.qr_token;
+
   const onSubmit = async (data: ItemInput) => {
     await itemsApi.update(item.id, data);
     refresh();
@@ -37,36 +39,40 @@ export default function ItemDetailScreen() {
   return (
     <div>
       <button onClick={() => navigate(-1)} className="text-green-600 text-sm mb-4">← Back</button>
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Edit Item</h1>
+      <h1 className="text-xl font-bold text-gray-900 mb-6">{isLeftover ? 'Edit Leftover' : 'Edit Item'}</h1>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
           <input {...register('name', { required: true })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-            <input type="number" step="any" {...register('quantity', { valueAsNumber: true })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-            <input {...register('unit')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-          </div>
-        </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-          <select {...register('category')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
-            <option value="">— none —</option>
-            {['Leftovers', 'Dairy', 'Meat', 'Produce', 'Grains', 'Drinks', 'Condiments', 'Other'].map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Expiry date</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{isLeftover ? 'Eat by' : 'Expiry date'}</label>
           <input type="date" {...register('expiry_date')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
         </div>
+        {!isLeftover && (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                <input type="number" step="any" {...register('quantity', { valueAsNumber: true })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                <input {...register('unit')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <select {...register('category')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                <option value="">— none —</option>
+                {['Leftovers', 'Dairy', 'Meat', 'Produce', 'Grains', 'Drinks', 'Condiments', 'Other'].map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
         <button type="submit" disabled={isSubmitting} className="w-full bg-green-600 text-white rounded-lg py-3 font-medium disabled:opacity-50">
           {isSubmitting ? 'Saving...' : 'Save changes'}
         </button>

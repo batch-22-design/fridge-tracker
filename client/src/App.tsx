@@ -6,10 +6,13 @@ import ItemDetailScreen from './screens/ItemDetailScreen';
 import ShoppingListScreen from './screens/ShoppingListScreen';
 import MealSuggestionsScreen from './screens/MealSuggestionsScreen';
 import RestockScreen from './screens/RestockScreen';
+import QrItemScreen from './screens/QrItemScreen';
 
 export default function App() {
   return (
     <Routes>
+      {/* Public QR route — no nav bar, works when opened from phone camera */}
+      <Route path="/qr/:token" element={<QrItemScreen />} />
       <Route element={<Layout />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardScreen />} />
