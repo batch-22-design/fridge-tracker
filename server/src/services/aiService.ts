@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { env } from '../env.js';
 
 const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
-const MODEL = 'claude-sonnet-4-20250514';
+const MODEL = 'claude-sonnet-4-6';
 
 export interface ExtractedItem {
   name: string;
@@ -44,8 +44,8 @@ Return only the JSON array, no other text.`,
     const text = message.content[0].type === 'text' ? message.content[0].text : null;
     if (!text) return null;
     return JSON.parse(text) as string[];
-  } catch (err) {
-    console.error('getMealSuggestions error:', err);
+  } catch (err: any) {
+    console.error('getMealSuggestions error:', err?.status, err?.message ?? err);
     return null;
   }
 }
