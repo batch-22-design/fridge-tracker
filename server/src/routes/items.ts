@@ -31,7 +31,16 @@ itemsRouter.post('/', async (req, res) => {
   const body = itemSchema.parse(req.body);
   const [item] = await query(
     `INSERT INTO items (household_id, name, category, quantity, unit, expiry_date, qr_token)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     ON CONFLICT (qr_token) DO UPDATE SET
+       name = EXCLUDED.name,
+       category = EXCLUDED.category,
+       quantity = EXCLUDED.quantity,
+       unit = EXCLUDED.unit,
+       expiry_date = EXCLUDED.expiry_date,
+       removed_at = NULL,
+       added_at = NOW()
+     RETURNING *`,
     [HOUSEHOLD_ID, body.name, body.category, body.quantity, body.unit, body.expiry_date, body.qr_token]
   );
   res.status(201).json(item);
