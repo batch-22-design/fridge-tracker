@@ -560,7 +560,7 @@ function StickerSheetForm() {
   const printSheet = () => {
     const win = window.open('', '_blank');
     if (!win) return;
-    const cols = count <= 4 ? 2 : 4;
+    const cols = count === 1 ? 1 : count <= 4 ? 2 : 4;
     win.document.write(`<!DOCTYPE html><html><head><title>Fridge Stickers</title>
 <style>
   body { margin: 0; padding: 8mm; font-family: sans-serif; background: white; }
@@ -587,7 +587,7 @@ ${stickers.map((url, i) => `<div class="sticker"><img src="${url}" /><p>Fridge s
       <div>
         <p className="text-sm font-medium text-gray-700 mb-2">How many stickers?</p>
         <div className="flex gap-2">
-          {[4, 8, 12, 16].map((n) => (
+          {[1, 4, 8, 12].map((n) => (
             <button
               key={n}
               onClick={() => setCount(n)}
@@ -611,7 +611,7 @@ ${stickers.map((url, i) => `<div class="sticker"><img src="${url}" /><p>Fridge s
 
       {stickers.length > 0 && (
         <div className="space-y-4">
-          <div className="grid grid-cols-4 gap-2">
+          <div className={`grid gap-2 ${stickers.length === 1 ? 'grid-cols-1 max-w-[180px] mx-auto' : 'grid-cols-4'}`}>
             {stickers.map((url, i) => (
               <div key={i} className="border border-dashed border-gray-300 rounded-lg p-1">
                 <img src={url} alt={`Sticker ${i + 1}`} className="w-full" />
