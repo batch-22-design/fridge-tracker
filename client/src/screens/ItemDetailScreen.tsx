@@ -44,8 +44,11 @@ export default function ItemDetailScreen() {
         expiry_date: data.expiry_date || undefined,
       });
       navigate('/dashboard');
-    } catch {
-      setSaveError('Failed to save. Please try again.');
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { error?: string }; status?: number }; message?: string })
+        ?.response?.data?.error
+        ?? `${(e as { response?: { status?: number } })?.response?.status ?? ''} ${(e as Error)?.message ?? ''}`.trim();
+      setSaveError(`Failed to save: ${msg}`);
     }
   };
 
