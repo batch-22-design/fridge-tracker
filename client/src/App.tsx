@@ -8,6 +8,7 @@ import MealSuggestionsScreen from './screens/MealSuggestionsScreen';
 import RestockScreen from './screens/RestockScreen';
 import QrItemScreen from './screens/QrItemScreen';
 import ContainersScreen from './screens/ContainersScreen';
+import SettingsScreen from './screens/SettingsScreen';
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/meals" element={<MealSuggestionsScreen />} />
         <Route path="/restock" element={<RestockScreen />} />
         <Route path="/containers" element={<ContainersScreen />} />
+        <Route path="/settings" element={<SettingsScreen />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

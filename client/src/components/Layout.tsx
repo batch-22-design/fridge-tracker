@@ -15,23 +15,17 @@ export default function Layout() {
           <span className="text-xl">🧊</span>
           <span>Fridge</span>
         </NavLink>
-        <NavLink to="/add" className={({ isActive }) =>
-          `flex flex-col items-center gap-0.5 text-xs ${isActive ? 'text-green-600' : 'text-gray-500'}`
-        }>
-          <span className="text-xl">➕</span>
-          <span>Add</span>
-        </NavLink>
         <NavLink to="/shopping" className={({ isActive }) =>
           `flex flex-col items-center gap-0.5 text-xs ${isActive ? 'text-green-600' : 'text-gray-500'}`
         }>
           <span className="text-xl">🛒</span>
           <span>Shopping</span>
         </NavLink>
-<NavLink to="/containers" className={({ isActive }) =>
+        <NavLink to="/settings" className={({ isActive }) =>
           `flex flex-col items-center gap-0.5 text-xs ${isActive ? 'text-green-600' : 'text-gray-500'}`
         }>
-          <span className="text-xl">📦</span>
-          <span>Containers</span>
+          <span className="text-xl">⚙️</span>
+          <span>Settings</span>
         </NavLink>
       </nav>
     </div>

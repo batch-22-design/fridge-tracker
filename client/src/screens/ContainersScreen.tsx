@@ -72,7 +72,7 @@ export default function ContainersScreen() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-gray-900">Containers</h1>
+        <h1 className="text-xl font-bold text-gray-900">Tubs</h1>
         <button
           onClick={() => setView('add-scan')}
           className="bg-green-600 text-white text-sm rounded-full px-4 py-1.5 font-medium"
@@ -86,7 +86,7 @@ export default function ContainersScreen() {
       ) : containers.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <p className="text-4xl mb-2">🫙</p>
-          <p className="mb-1">No containers yet</p>
+          <p className="mb-1">No tubs yet</p>
           <p className="text-sm">Scan a QR sticker on a Tupperware to add it</p>
           <button onClick={() => setView('add-scan')} className="mt-4 text-green-600 text-sm font-medium">
             Add a container
