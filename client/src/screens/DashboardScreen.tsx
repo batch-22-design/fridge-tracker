@@ -11,7 +11,7 @@ const GROUPS = [
   { key: 'overdue',  label: '🚨 Should have been eaten by now', color: 'text-red-600' },
   { key: 'today',   label: '⚠️ Eat today',                     color: 'text-orange-500' },
   { key: 'soon',    label: '🕐 Eat in the next 3 days',        color: 'text-yellow-600' },
-  { key: 'week',    label: '📅 This week',                     color: 'text-blue-600' },
+  { key: 'week',    label: '📅 Eat this week',                  color: 'text-blue-600' },
   { key: 'later',   label: '✅ Good for now',                  color: 'text-green-600' },
   { key: 'unknown', label: '📦 No date set',                   color: 'text-gray-500' },
 ];

@@ -36,7 +36,7 @@ export default function Layout() {
         <NavLink to="/containers" className={({ isActive }) =>
           `flex flex-col items-center gap-0.5 text-xs ${isActive ? 'text-green-600' : 'text-gray-500'}`
         }>
-          <span className="text-xl">🫙</span>
+          <span className="text-xl">📦</span>
           <span>Containers</span>
         </NavLink>
       </nav>

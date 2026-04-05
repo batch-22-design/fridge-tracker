@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useItems } from '../hooks/useItems';
 import { itemsApi, type ItemInput } from '../api/items';
+import { containersApi, type Container } from '../api/containers';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 export default function ItemDetailScreen() {
@@ -12,6 +13,13 @@ export default function ItemDetailScreen() {
   const item = items.find((i) => i.id === Number(id));
   const [saveError, setSaveError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [container, setContainer] = useState<Container | null>(null);
+
+  useEffect(() => {
+    if (item?.qr_token) {
+      containersApi.getByQrToken(item.qr_token).then(setContainer).catch(() => {});
+    }
+  }, [item?.qr_token]);
 
   const { register, handleSubmit, formState: { isSubmitting } } = useForm<ItemInput>({
     values: item ? {
@@ -46,9 +54,28 @@ export default function ItemDetailScreen() {
     navigate('/dashboard');
   };
 
+  const leftoverActions = [
+    { reason: 'used' as const,      label: 'Eaten' },
+    { reason: 'expired' as const,   label: 'Gone off' },
+    { reason: 'discarded' as const, label: 'Thrown away' },
+  ];
+  const genericActions = [
+    { reason: 'used' as const,      label: 'Used' },
+    { reason: 'expired' as const,   label: 'Expired' },
+    { reason: 'discarded' as const, label: 'Discarded' },
+  ];
+  const actions = isLeftover ? leftoverActions : genericActions;
+
   return (
     <div>
       <button onClick={() => navigate(-1)} className="text-green-600 text-sm mb-4">← Back</button>
+
+      {isLeftover && container?.photo && (
+        <div className="mb-4 rounded-2xl overflow-hidden">
+          <img src={container.photo} alt="Container" className="w-full aspect-video object-cover" />
+        </div>
+      )}
+
       <h1 className="text-xl font-bold text-gray-900 mb-6">{isLeftover ? 'Edit Leftover' : 'Edit Item'}</h1>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -92,13 +119,13 @@ export default function ItemDetailScreen() {
 
       <div className="mt-8 space-y-2">
         <p className="text-sm font-medium text-gray-700 mb-2">Mark as:</p>
-        {(['used', 'expired', 'discarded'] as const).map((reason) => (
+        {actions.map(({ reason, label }) => (
           <button
             key={reason}
             onClick={() => handleRemove(reason)}
-            className="w-full border border-gray-200 text-gray-600 rounded-lg py-2.5 text-sm capitalize hover:border-red-300 hover:text-red-600"
+            className="w-full border border-gray-200 text-gray-600 rounded-lg py-2.5 text-sm hover:border-red-300 hover:text-red-600"
           >
-            {reason}
+            {label}
           </button>
         ))}
       </div>
