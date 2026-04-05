@@ -6,6 +6,7 @@ import { itemsRouter } from './routes/items.js';
 import { aiRouter } from './routes/ai.js';
 import { shoppingRouter } from './routes/shopping.js';
 import { pushRouter } from './routes/push.js';
+import { containersRouter } from './routes/containers.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 export function createApp() {
@@ -20,6 +21,7 @@ export function createApp() {
   app.use('/ai', aiRouter);
   app.use('/shopping', shoppingRouter);
   app.use('/push', pushRouter);
+  app.use('/containers', containersRouter);
 
   app.use(errorHandler);
   return app;

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { itemsApi, type Item } from '../api/items';
+import { containersApi, type Container } from '../api/containers';
 
 function foodEmoji(name: string): string {
   const n = name.toLowerCase();
@@ -35,9 +36,11 @@ export default function QrItemScreen() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<'loading' | 'found' | 'not-found' | 'register' | 'done'>('loading');
   const [item, setItem] = useState<Item | null>(null);
+  const [container, setContainer] = useState<Container | null>(null);
 
   useEffect(() => {
     if (!token) return;
+    containersApi.getByQrToken(token).then(setContainer).catch(() => {});
     itemsApi.getByQrToken(token).then((i) => {
       setItem(i);
       setStatus('found');
@@ -81,12 +84,18 @@ export default function QrItemScreen() {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-sm space-y-6">
-          <div className="bg-white rounded-2xl shadow-sm p-6 text-center">
-            <p className="text-3xl mb-3">{foodEmoji(item.name)}</p>
-            <h1 className="text-2xl font-bold text-gray-900">{item.name}</h1>
-            {item.expiry_date && (
-              <p className="text-gray-500 mt-2">Eat by <span className="font-medium text-gray-700">{formatDate(item.expiry_date)}</span></p>
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden text-center">
+            {container?.photo ? (
+              <img src={container.photo} alt="Container" className="w-full aspect-square object-cover" />
+            ) : (
+              <p className="text-5xl pt-6 pb-2">{foodEmoji(item.name)}</p>
             )}
+            <div className="p-5">
+              <h1 className="text-2xl font-bold text-gray-900">{item.name}</h1>
+              {item.expiry_date && (
+                <p className="text-gray-500 mt-2">Eat by <span className="font-medium text-gray-700">{formatDate(item.expiry_date)}</span></p>
+              )}
+            </div>
           </div>
           <button
             onClick={markUsed}
