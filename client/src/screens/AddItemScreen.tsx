@@ -464,32 +464,31 @@ function LeftoverStickerScanner({
           handled = true;
           controlsRef.current?.stop();
           controlsRef.current = null;
+          const text = result.getText();
+          const uuidMatch = text.match(UUID_RE);
+          if (!uuidMatch) {
+            setError("That doesn't look like a fridge sticker. Try again.");
+            setScanning(false);
+            handled = false;
+            return;
+          }
+          const uuid = uuidMatch[0];
+          // Check if already linked
+          let existingItem = null;
+          try { existingItem = await itemsApi.getByQrToken(uuid); } catch { /* not found = free to use */ }
+          if (existingItem) {
+            setError('This sticker is already linked to a food item. Use a different one.');
+            setScanning(false);
+            handled = false;
+            return;
+          }
+          // Link the sticker
           try {
-            const text = result.getText();
-            const uuidMatch = text.match(UUID_RE);
-            if (!uuidMatch) {
-              setError("That doesn't look like a fridge sticker. Try again.");
-              setScanning(false);
-              return;
-            }
-            const uuid = uuidMatch[0];
-            let alreadyUsed = false;
-            try {
-              await itemsApi.getByQrToken(uuid);
-              alreadyUsed = true;
-            } catch (e: unknown) {
-              const status = (e as { response?: { status?: number } })?.response?.status;
-              if (status !== 404) throw e; // real error, re-throw
-            }
-            if (alreadyUsed) {
-              setError('This sticker is already linked to a food item. Use a different one.');
-              setScanning(false);
-              return;
-            }
             await itemsApi.create({ name: foodData.name, expiry_date: foodData.expiry_date, qr_token: uuid, category: 'Leftovers' });
             onDone();
-          } catch {
-            setError('Something went wrong. Please try again.');
+          } catch (e: unknown) {
+            const msg = (e as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error ?? (e as Error)?.message ?? 'Unknown error';
+            setError(`Could not save: ${msg}`);
             setScanning(false);
             handled = false;
           }
