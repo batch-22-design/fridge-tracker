@@ -100,6 +100,12 @@ export default function QrItemScreen() {
           >
             Edit details
           </button>
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="w-full text-gray-400 text-sm py-2"
+          >
+            Open fridge tracker →
+          </button>
         </div>
       </div>
     );
@@ -115,6 +121,12 @@ export default function QrItemScreen() {
             <p className="text-sm text-gray-500">What's in this container?</p>
           </div>
           <RegisterForm token={token!} onDone={() => navigate('/dashboard')} />
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="w-full text-gray-400 text-sm py-2"
+          >
+            Open fridge tracker →
+          </button>
         </div>
       </div>
     );
