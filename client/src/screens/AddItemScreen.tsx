@@ -104,13 +104,13 @@ function ManualForm() {
 function ScanForm() {
   const [status, setStatus] = useState<'idle' | 'scanning' | 'found' | 'error'>('idle');
   const [product, setProduct] = useState<{ name: string; category?: string } | null>(null);
-  const [cameras, setCameras] = useState<{ deviceId: string; label: string }[]>([]);
-  const [cameraIndex, setCameraIndex] = useState(0);
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const videoRef = useRef<HTMLVideoElement>(null);
   const readerRef = useRef<import('@zxing/browser').BrowserMultiFormatReader | null>(null);
   const navigate = useNavigate();
 
-  const startScan = async (camIndex = 0) => {
+  const startScan = async (facing: 'environment' | 'user' = facingMode) => {
+    readerRef.current?.reset();
     setStatus('scanning');
     try {
       const { BrowserMultiFormatReader, BarcodeFormat, DecodeHintType } = await import('@zxing/browser');
@@ -122,33 +122,32 @@ function ScanForm() {
       const reader = new BrowserMultiFormatReader(hints);
       readerRef.current = reader;
 
-      const devices = await BrowserMultiFormatReader.listVideoInputDevices();
-      setCameras(devices);
-
-      const deviceId = devices[camIndex]?.deviceId;
-      await reader.decodeFromVideoDevice(deviceId, videoRef.current!, async (result, err) => {
-        if (result) {
-          reader.reset();
-          readerRef.current = null;
-          try {
-            const p = await itemsApi.scan(result.getText());
-            setProduct(p);
-            setStatus('found');
-          } catch {
-            setStatus('error');
+      await reader.decodeFromConstraints(
+        { video: { facingMode: facing } },
+        videoRef.current!,
+        async (result, err) => {
+          if (result) {
+            reader.reset();
+            readerRef.current = null;
+            try {
+              const p = await itemsApi.scan(result.getText());
+              setProduct(p);
+              setStatus('found');
+            } catch {
+              setStatus('error');
+            }
           }
+          void err;
         }
-        void err;
-      });
+      );
     } catch {
       setStatus('error');
     }
   };
 
   const flipCamera = () => {
-    readerRef.current?.reset();
-    const next = (cameraIndex + 1) % cameras.length;
-    setCameraIndex(next);
+    const next = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(next);
     startScan(next);
   };
 
@@ -167,7 +166,7 @@ function ScanForm() {
   return (
     <div className="space-y-4">
       {status === 'idle' && (
-        <button onClick={() => startScan(0)} className="w-full bg-green-600 text-white rounded-xl py-4 text-lg font-medium">
+        <button onClick={() => startScan()} className="w-full bg-green-600 text-white rounded-xl py-4 text-lg font-medium">
           📷 Start Scanning
         </button>
       )}
@@ -181,11 +180,9 @@ function ScanForm() {
             </div>
           </div>
           <div className="flex gap-3">
-            {cameras.length > 1 && (
-              <button onClick={flipCamera} className="flex-1 bg-gray-100 text-gray-700 rounded-lg py-3 text-sm font-medium">
-                🔄 Flip Camera
-              </button>
-            )}
+            <button onClick={flipCamera} className="flex-1 bg-gray-100 text-gray-700 rounded-lg py-3 text-sm font-medium">
+              🔄 Flip Camera
+            </button>
             <button onClick={stop} className="flex-1 bg-gray-100 text-gray-700 rounded-lg py-3 text-sm font-medium">
               Cancel
             </button>
@@ -203,7 +200,7 @@ function ScanForm() {
           <button onClick={addProduct} className="w-full bg-green-600 text-white rounded-lg py-3 font-medium">
             Add to fridge
           </button>
-          <button onClick={() => { setProduct(null); startScan(cameraIndex); }} className="w-full bg-gray-100 text-gray-700 rounded-lg py-3 text-sm">
+          <button onClick={() => { setProduct(null); startScan(); }} className="w-full bg-gray-100 text-gray-700 rounded-lg py-3 text-sm">
             Scan another
           </button>
         </div>
@@ -212,7 +209,7 @@ function ScanForm() {
       {status === 'error' && (
         <div className="space-y-3 text-center">
           <p className="text-red-500">Product not found</p>
-          <button onClick={() => startScan(cameraIndex)} className="w-full bg-gray-100 text-gray-700 rounded-lg py-3 text-sm">
+          <button onClick={() => startScan()} className="w-full bg-gray-100 text-gray-700 rounded-lg py-3 text-sm">
             Try again
           </button>
         </div>
