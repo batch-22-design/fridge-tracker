@@ -106,29 +106,23 @@ function ScanForm() {
   const [product, setProduct] = useState<{ name: string; category?: string } | null>(null);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const videoRef = useRef<HTMLVideoElement>(null);
-  const readerRef = useRef<import('@zxing/browser').BrowserMultiFormatReader | null>(null);
+  const controlsRef = useRef<{ stop: () => void } | null>(null);
   const navigate = useNavigate();
 
   const startScan = async (facing: 'environment' | 'user' = facingMode) => {
-    readerRef.current?.reset();
+    controlsRef.current?.stop();
+    controlsRef.current = null;
     setStatus('scanning');
     try {
-      const { BrowserMultiFormatReader, BarcodeFormat, DecodeHintType } = await import('@zxing/browser');
-      const hints = new Map();
-      hints.set(DecodeHintType.POSSIBLE_FORMATS, [
-        BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E,
-        BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.QR_CODE,
-      ]);
-      const reader = new BrowserMultiFormatReader(hints);
-      readerRef.current = reader;
-
-      await reader.decodeFromConstraints(
-        { video: { facingMode: facing } },
+      const { BrowserMultiFormatReader } = await import('@zxing/browser');
+      const reader = new BrowserMultiFormatReader();
+      const controls = await reader.decodeFromConstraints(
+        { video: { facingMode: { ideal: facing } } },
         videoRef.current!,
         async (result, err) => {
           if (result) {
-            reader.reset();
-            readerRef.current = null;
+            controls.stop();
+            controlsRef.current = null;
             try {
               const p = await itemsApi.scan(result.getText());
               setProduct(p);
@@ -140,6 +134,7 @@ function ScanForm() {
           void err;
         }
       );
+      controlsRef.current = controls;
     } catch {
       setStatus('error');
     }
@@ -152,8 +147,8 @@ function ScanForm() {
   };
 
   const stop = () => {
-    readerRef.current?.reset();
-    readerRef.current = null;
+    controlsRef.current?.stop();
+    controlsRef.current = null;
     setStatus('idle');
   };
 
