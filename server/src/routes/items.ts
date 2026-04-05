@@ -41,7 +41,7 @@ itemsRouter.post('/', async (req, res) => {
        removed_at = NULL,
        added_at = NOW()
      RETURNING *`,
-    [HOUSEHOLD_ID, body.name, body.category, body.quantity, body.unit, body.expiry_date, body.qr_token]
+    [HOUSEHOLD_ID, body.name, body.category ?? null, body.quantity ?? null, body.unit ?? null, body.expiry_date ?? null, body.qr_token ?? null]
   );
   res.status(201).json(item);
 });
@@ -67,7 +67,7 @@ itemsRouter.put('/:id', async (req, res) => {
        qr_token = COALESCE($6, qr_token)
      WHERE id = $7 AND household_id = $8 AND removed_at IS NULL
      RETURNING *`,
-    [body.name, body.category, body.quantity, body.unit, body.expiry_date, body.qr_token, req.params.id, HOUSEHOLD_ID]
+    [body.name ?? null, body.category ?? null, body.quantity ?? null, body.unit ?? null, body.expiry_date ?? null, body.qr_token ?? null, req.params.id, HOUSEHOLD_ID]
   );
   if (!item) { res.status(404).json({ error: 'Item not found' }); return; }
   res.json(item);
