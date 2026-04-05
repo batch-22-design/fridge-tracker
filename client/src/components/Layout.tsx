@@ -27,13 +27,7 @@ export default function Layout() {
           <span className="text-xl">🛒</span>
           <span>Shopping</span>
         </NavLink>
-        <NavLink to="/meals" className={({ isActive }) =>
-          `flex flex-col items-center gap-0.5 text-xs ${isActive ? 'text-green-600' : 'text-gray-500'}`
-        }>
-          <span className="text-xl">🍳</span>
-          <span>Meals</span>
-        </NavLink>
-        <NavLink to="/containers" className={({ isActive }) =>
+<NavLink to="/containers" className={({ isActive }) =>
           `flex flex-col items-center gap-0.5 text-xs ${isActive ? 'text-green-600' : 'text-gray-500'}`
         }>
           <span className="text-xl">📦</span>
