@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { itemsApi, type ItemInput } from '../api/items';
@@ -105,15 +105,20 @@ function ScanForm() {
   const [status, setStatus] = useState<'idle' | 'scanning' | 'found' | 'error'>('idle');
   const [product, setProduct] = useState<{ name: string; category?: string } | null>(null);
   const navigate = useNavigate();
+  const scannerRef = useRef<import('html5-qrcode').Html5Qrcode | null>(null);
 
   const startScan = async () => {
     setStatus('scanning');
     try {
-      const { Html5QrcodeScanner } = await import('html5-qrcode');
-      const scanner = new Html5QrcodeScanner('qr-reader', { fps: 10, qrbox: 250 }, false);
-      scanner.render(
+      const { Html5Qrcode } = await import('html5-qrcode');
+      const scanner = new Html5Qrcode('qr-reader');
+      scannerRef.current = scanner;
+      await scanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: 250 },
         async (decodedText) => {
-          scanner.clear();
+          await scanner.stop();
+          scannerRef.current = null;
           try {
             const p = await itemsApi.scan(decodedText);
             setProduct(p);
@@ -136,13 +141,18 @@ function ScanForm() {
   };
 
   return (
-    <div className="text-center">
+    <div className="text-center space-y-4">
       {status === 'idle' && (
-        <button onClick={startScan} className="bg-green-600 text-white rounded-xl px-6 py-3 font-medium">
-          Start Camera Scan
+        <button onClick={startScan} className="w-full bg-green-600 text-white rounded-xl py-4 text-lg font-medium">
+          📷 Start Scanning
         </button>
       )}
-      {status === 'scanning' && <div id="qr-reader" className="mx-auto max-w-sm" />}
+      {status === 'scanning' && (
+        <div>
+          <div id="qr-reader" className="mx-auto max-w-sm rounded-xl overflow-hidden" />
+          <p className="text-sm text-gray-500 mt-2">Point camera at a barcode</p>
+        </div>
+      )}
       {status === 'found' && product && (
         <div className="space-y-4">
           <p className="text-lg font-medium">{product.name}</p>
@@ -150,12 +160,17 @@ function ScanForm() {
           <button onClick={addProduct} className="w-full bg-green-600 text-white rounded-lg py-3 font-medium">
             Add to fridge
           </button>
+          <button onClick={() => setStatus('idle')} className="w-full text-gray-500 text-sm py-2">
+            Scan another
+          </button>
         </div>
       )}
       {status === 'error' && (
         <div className="space-y-2">
           <p className="text-red-500">Could not find product</p>
-          <button onClick={() => setStatus('idle')} className="text-green-600 text-sm">Try again</button>
+          <button onClick={() => setStatus('idle')} className="w-full bg-gray-100 text-gray-700 rounded-lg py-3 text-sm">
+            Try again
+          </button>
         </div>
       )}
     </div>
