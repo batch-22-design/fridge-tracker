@@ -10,11 +10,11 @@ const HOUSEHOLD_ID = 1;
 
 const itemSchema = z.object({
   name: z.string().min(1),
-  category: z.string().optional(),
-  quantity: z.number().positive().optional(),
-  unit: z.string().optional(),
-  expiry_date: z.string().optional(),
-  qr_token: z.string().optional(),
+  category: z.string().nullish(),
+  quantity: z.number().positive().nullish(),
+  unit: z.string().nullish(),
+  expiry_date: z.string().nullish(),
+  qr_token: z.string().nullish(),
 });
 
 itemsRouter.get('/', async (_req, res) => {
