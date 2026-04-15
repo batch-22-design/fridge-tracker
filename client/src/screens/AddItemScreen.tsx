@@ -323,7 +323,7 @@ function LeftoversForm() {
   const makeNewSticker = async () => {
     if (!foodData) return;
     setGenerating(true);
-    const id = nanoid(12);
+    const id = nanoid(8);
     const qrUrl = `${window.location.origin}/qr/${id}`;
     const { default: QRCode } = await import('qrcode');
     const dataUrl = await QRCode.toDataURL(qrUrl, { width: 300, margin: 2, errorCorrectionLevel: 'L' });
@@ -579,7 +579,7 @@ function StickerSheetForm() {
     const { default: QRCode } = await import('qrcode');
     const urls = await Promise.all(
       Array.from({ length: count }, async () => {
-        const id = nanoid(12);
+        const id = nanoid(8);
         const qrUrl = `${window.location.origin}/qr/${id}`;
         return QRCode.toDataURL(qrUrl, { width: 200, margin: 1, errorCorrectionLevel: 'L' });
       })
