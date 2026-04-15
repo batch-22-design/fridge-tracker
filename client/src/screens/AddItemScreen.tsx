@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { nanoid } from 'nanoid';
 import { itemsApi, type ItemInput } from '../api/items';
 
 type Tab = 'manual' | 'scan' | 'leftovers' | 'stickers' | 'receipt';
@@ -127,7 +128,7 @@ function ScanForm() {
     try {
       const { BrowserMultiFormatReader } = await import('@zxing/browser');
       const reader = new BrowserMultiFormatReader();
-      const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+      const ID_RE = /[A-Za-z0-9_-]{10,}/;
       const controls = await reader.decodeFromConstraints(
         { video: { facingMode: { ideal: facing } } },
         videoRef.current!,
@@ -136,12 +137,12 @@ function ScanForm() {
             controls.stop();
             controlsRef.current = null;
             const text = result.getText();
-            const uuidMatch = text.match(UUID_RE);
-            if (uuidMatch) {
-              const uuid = uuidMatch[0];
-              setScannedUuid(uuid);
+            const idMatch = text.match(ID_RE);
+            if (idMatch) {
+              const id = idMatch[0];
+              setScannedUuid(id);
               try {
-                const item = await itemsApi.getByQrToken(uuid);
+                const item = await itemsApi.getByQrToken(id);
                 setQrItem(item);
                 setStatus('qr-found');
               } catch {
@@ -322,11 +323,11 @@ function LeftoversForm() {
   const makeNewSticker = async () => {
     if (!foodData) return;
     setGenerating(true);
-    const uuid = crypto.randomUUID();
-    const qrUrl = `${window.location.origin}/qr/${uuid}`;
+    const id = nanoid(12);
+    const qrUrl = `${window.location.origin}/qr/${id}`;
     const { default: QRCode } = await import('qrcode');
-    const dataUrl = await QRCode.toDataURL(qrUrl, { width: 300, margin: 2 });
-    await itemsApi.create({ name: foodData.name, expiry_date: foodData.expiry_date, qr_token: uuid, category: 'Leftovers' });
+    const dataUrl = await QRCode.toDataURL(qrUrl, { width: 300, margin: 2, errorCorrectionLevel: 'L' });
+    await itemsApi.create({ name: foodData.name, expiry_date: foodData.expiry_date, qr_token: id, category: 'Leftovers' });
     setQrDataUrl(dataUrl);
     setGenerating(false);
     setLstate('qr');
@@ -446,7 +447,7 @@ function LeftoverStickerScanner({
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
 
-  const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+  const ID_RE = /[A-Za-z0-9_-]{10,}/;
 
   const saveWithUuid = async (uuid: string) => {
     await itemsApi.create({ name: foodData.name, expiry_date: foodData.expiry_date, qr_token: uuid, category: 'Leftovers' });
@@ -473,13 +474,13 @@ function LeftoverStickerScanner({
           controlsRef.current = null;
           setScanning(false);
           const text = result.getText();
-          const uuidMatch = text.match(UUID_RE);
-          if (!uuidMatch) {
+          const idMatch = text.match(ID_RE);
+          if (!idMatch) {
             setError("That doesn't look like a fridge sticker. Try again.");
             handled = false;
             return;
           }
-          const uuid = uuidMatch[0];
+          const uuid = idMatch[0];
           let existingItem = null;
           try { existingItem = await itemsApi.getByQrToken(uuid); } catch { /* free to use */ }
           if (existingItem) {
@@ -578,9 +579,9 @@ function StickerSheetForm() {
     const { default: QRCode } = await import('qrcode');
     const urls = await Promise.all(
       Array.from({ length: count }, async () => {
-        const uuid = crypto.randomUUID();
-        const qrUrl = `${window.location.origin}/qr/${uuid}`;
-        return QRCode.toDataURL(qrUrl, { width: 200, margin: 1 });
+        const id = nanoid(12);
+        const qrUrl = `${window.location.origin}/qr/${id}`;
+        return QRCode.toDataURL(qrUrl, { width: 200, margin: 1, errorCorrectionLevel: 'L' });
       })
     );
     setStickers(urls);
